@@ -10,5 +10,14 @@ import java.util.List;
 public class FoodController {
     private final FoodService service;
     public FoodController(FoodService service) { this.service = service; }
-    @GetMapping("/recommend") public List<FoodRecipe> recommend(@RequestParam Integer monthAge, @RequestParam(required = false) String allergen) { return service.recommend(monthAge, allergen); }
+
+    /**
+     * 按月龄推荐食谱；传 babyId 时自动屏蔽该宝宝已排除食材的食谱。
+     */
+    @GetMapping("/recommend")
+    public List<FoodRecipe> recommend(@RequestParam Integer monthAge,
+                                      @RequestParam(required = false) String allergen,
+                                      @RequestParam(required = false) Long babyId) {
+        return service.recommend(monthAge, allergen, babyId);
+    }
 }
