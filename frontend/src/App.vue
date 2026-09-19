@@ -1,28 +1,62 @@
 <template>
   <main>
-    <header><h1>宝宝成长记录</h1><p>小满 10 个月 · 今日辅食 3 次</p></header>
-    <section class="card">
-      <h2>生长曲线</h2>
-      <div ref="growthChart" class="chart"></div>
-    </section>
-    <section class="card">
-      <h2>疫苗提醒</h2>
-      <van-cell v-for="item in vaccines" :key="item.name" :title="item.name" :value="item.date"><template #label><van-tag :type="item.done ? 'success' : 'warning'">{{ item.done ? '已接种' : '待接种' }}</van-tag></template></van-cell>
-    </section>
-    <section class="card">
-      <h2>辅食推荐</h2>
-      <van-cell v-for="food in foods" :key="food" :title="food" value="适合 9-12 个月" />
-    </section>
+    <header>
+      <h1>辅食过敏管理</h1>
+      <div class="header-sub">
+        <span v-if="currentBaby">{{ currentBaby.name }} · {{ monthAge }} 个月</span>
+        <span v-else>请先创建宝宝档案</span>
+      </div>
+    </header>
+
+    <van-tabs v-model:active="active" sticky offset-top="0" color="#ff8a65" title-active-color="#ff8a65">
+      <van-tab title="喂养记录">
+        <FeedingPage :baby-id="currentBabyId" :active="active === 0" />
+      </van-tab>
+      <van-tab title="反应历史">
+        <ReactionHistoryPage :baby-id="currentBabyId" :active="active === 1" />
+      </van-tab>
+      <van-tab title="食材状态">
+        <IngredientStatusPage :baby-id="currentBabyId" :active="active === 2" />
+      </van-tab>
+      <van-tab title="食谱推荐">
+        <RecipePage :baby-id="currentBabyId" :active="active === 3" />
+      </van-tab>
+      <van-tab title="宝宝">
+        <BabyPage />
+      </van-tab>
+    </van-tabs>
   </main>
 </template>
+
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import * as echarts from 'echarts';
-const growthChart = ref<HTMLElement>();
-const vaccines = [{ name: '麻腮风疫苗', date: '2026-06-18', done: false }, { name: '乙肝疫苗', date: '2026-04-10', done: true }];
-const foods = ['南瓜米糊', '鳕鱼土豆泥', '苹果燕麦粥'];
-onMounted(() => {
-  const chart = echarts.init(growthChart.value!);
-  chart.setOption({ legend: {}, xAxis: { data: ['6月','7月','8月','9月','10月'] }, yAxis: {}, series: [{ name: '体重kg', type: 'line', data: [7.5,7.9,8.2,8.6,9.1] }, { name: '身高cm', type: 'line', data: [66,68,70,72,74] }] });
+import { computed, onMounted, ref } from 'vue';
+import { Tab, Tabs, showToast } from 'vant';
+import { store, monthAgeOf } from './store';
+import FeedingPage from './pages/FeedingPage.vue';
+import ReactionHistoryPage from './pages/ReactionHistoryPage.vue';
+import IngredientStatusPage from './pages/IngredientStatusPage.vue';
+import RecipePage from './pages/RecipePage.vue';
+import BabyPage from './pages/BabyPage.vue';
+
+const active = ref(0);
+
+const currentBabyId = computed(() => store.state.currentBabyId);
+const currentBaby = computed(() => store.currentBaby());
+const monthAge = computed(() => (currentBaby.value ? monthAgeOf(currentBaby.value.birthday) : 0));
+
+onMounted(async () => {
+  try {
+    await store.loadBabies();
+  } catch (e) {
+    showToast((e as Error).message);
+  }
 });
 </script>
+
+<style scoped>
+.header-sub {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+</style>
